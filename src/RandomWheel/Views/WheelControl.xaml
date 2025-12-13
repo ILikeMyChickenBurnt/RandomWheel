@@ -1,0 +1,28 @@
+<UserControl x:Class="RandomWheel.Views.WheelControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="Transparent"
+             ClipToBounds="True"
+             SizeChanged="UserControl_SizeChanged">
+    <!-- Outer container that does NOT rotate - clips content -->
+    <Grid Background="Transparent" ClipToBounds="True">
+        
+        <!-- Inner Grid that ROTATES (contains wheel segments) -->
+        <Grid x:Name="WheelGrid" ClipToBounds="True">
+            <Grid.RenderTransform>
+                <RotateTransform x:Name="WheelRotation" Angle="0" />
+            </Grid.RenderTransform>
+            
+            <!-- Canvas for wheel segments -->
+            <Canvas x:Name="WheelCanvas" ClipToBounds="True" />
+        </Grid>
+        
+        <!-- Winner pointer - STATIC, fixed at top center, pointing DOWN into the wheel -->
+        <Canvas x:Name="PointerCanvas" ClipToBounds="False">
+            <Polygon x:Name="WinnerPointer"
+                     Fill="#FF5722" 
+                     Stroke="#D84315"
+                     StrokeThickness="2" />
+        </Canvas>
+    </Grid>
+</UserControl>
