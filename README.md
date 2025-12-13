@@ -1,10 +1,10 @@
-# ?? RandomWheel
+# RandomWheel
 
 A fun and fair random selection tool with a beautiful spinning wheel animation. Perfect for raffles, giveaways, choosing what to eat for dinner, or any situation where you need to pick something randomly!
 
 ---
 
-## ?? Download
+## Download
 
 Download the latest version from the [Releases](../../releases) page.
 
@@ -18,48 +18,47 @@ Download the latest version from the [Releases](../../releases) page.
 
 ---
 
-## ? Features
+## Features
 
-### ?? **Fair Random Selection**
+### Fair Random Selection
 Every item has an equal chance of being selected. The winner is chosen using a cryptographically secure random number generator — the same technology used in security applications — ensuring truly unbiased results.
 
-### ?? **Beautiful Spinning Wheel**
+### Beautiful Spinning Wheel
 Watch the colorful wheel spin with a satisfying animation that gradually slows down before landing on the winner. Each item gets its own vibrant color segment.
 
-### ?? **Multiple Lists**
+### Multiple Lists
 Create and manage multiple lists for different purposes:
 - "Lunch Options" for deciding where to eat
 - "Team Members" for assigning tasks
 - "Movie Night" for picking what to watch
 - ...and anything else you can imagine!
 
-### ? **Track Selected Items**
+### Track Selected Items
 Mark items as "selected" to exclude them from future spins. Perfect for:
 - Raffles where each person can only win once
 - Going through a list without repeats
 - Tracking what you've already tried
 
-### ?? **Import & Export**
+### Import & Export
 - **Import CSV**: Quickly add items from a spreadsheet or text file
 - **Export CSV**: Save your lists to share or backup
 
-### ?? **Audit Log**
+### Audit Log
 Every spin is logged with timestamps, so you have a record of all selections made.
 
-### ??? **Flexible Display**
+### Flexible Display
 - Collapse the sidebar to give the wheel maximum screen space
-- The wheel automatically resizes to fill available space
-- Works great on any screen size
+- The wheel looks great on any screen size
 
 ---
 
-## ?? Getting Started
+## Getting Started
 
 ### Adding Items
 
 1. **Single Item**: Type a name in the "Add Item" box and click "Add Item" (or press Enter)
 2. **Multiple Items**: Paste a list into "Bulk Add" — items can be separated by commas, semicolons, or new lines
-3. **From File**: Click **Options ? Import CSV** to load items from a CSV file
+3. **From File**: Click **Options > Import CSV** to load items from a CSV file
 
 ### Spinning the Wheel
 
@@ -87,7 +86,7 @@ Click the **<** button between the sidebar and wheel to hide the sidebar. This g
 
 ---
 
-## ?? How the Randomness Works
+## How the Randomness Works
 
 ### The Spinning Animation is Just for Fun!
 
@@ -116,7 +115,7 @@ But rest assured: whether the animation shows 3 spins or 30, the same winner was
 
 ---
 
-## ?? Data Storage
+## Data Storage
 
 Your lists are automatically saved to:
 ```
@@ -130,7 +129,7 @@ The audit log is saved to:
 
 ---
 
-## ??? Tips & Tricks
+## Tips & Tricks
 
 - **Quick Add**: Press **Enter** while typing in the Add Item box to quickly add items
 - **Bulk Paste**: Copy a column from Excel or a list from anywhere and paste it into Bulk Add
@@ -139,7 +138,7 @@ The audit log is saved to:
 
 ---
 
-## ?? Build & Run (For Developers)
+## Build & Run (For Developers)
 
 ```powershell
 # From repo root
@@ -151,7 +150,6 @@ dotnet run --project src/RandomWheel/RandomWheel.csproj -c Debug
 ### Publish (Self-contained single-file win-x64)
 
 ```powershell
-# Produces a single EXE under src/RandomWheel/bin/Release/net10.0-windows/win-x64/publish
 dotnet publish src/RandomWheel/RandomWheel.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
 ```
 
@@ -163,10 +161,6 @@ dotnet test RandomWheel.sln -c Debug
 
 ---
 
-## ?? License
+## License
 
 This project is open source. Feel free to use, modify, and share!
-
----
-
-Made with ?? for fair and fun random selections.
