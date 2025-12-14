@@ -15,13 +15,13 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '8.0.x'
+        dotnet-version: '10.0.x'
 
     - name: Publish application
       run: dotnet publish src/RandomWheel/RandomWheel.csproj -c Release -o ./publish
 
     - name: Create zip archive
-      run: Compress-Archive -Path ./publish/RandomWheel.exe -DestinationPath ./RandomWheel-${{ github.event.release.tag_name }}-win-x64.zip
+      run: Compress-Archive -Path ./publish/* -DestinationPath ./RandomWheel-${{ github.event.release.tag_name }}-win-x64.zip
 
     - name: Upload release asset
       uses: softprops/action-gh-release@v2
