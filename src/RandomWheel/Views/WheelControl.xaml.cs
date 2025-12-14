@@ -54,16 +54,22 @@ namespace RandomWheel.Views
             if (size <= 0) return;
 
             double cx = ActualWidth / 2;
+            double cy = ActualHeight / 2;
+            double radius = (size / 2) - 15; // Same margin as wheel
             
-            // Create pointer triangle at top center
+            // Position pointer so it's half above and half overlaying the wheel
+            double wheelTop = cy - radius;
+            
+            // Create pointer triangle - half above wheel, half overlapping
             double pointerWidth = Math.Max(16, size * 0.06);
-            double pointerHeight = Math.Max(20, size * 0.06);
+            double pointerHeight = Math.Max(20, size * 0.08);
+            double pointerTop = wheelTop - (pointerHeight / 2); // Half above the wheel edge
             
             WinnerPointer.Points = new PointCollection
             {
-                new Point(cx, pointerHeight + 5),           // Tip pointing down
-                new Point(cx - pointerWidth / 2, 5),        // Top left
-                new Point(cx + pointerWidth / 2, 5)         // Top right
+                new Point(cx, wheelTop + (pointerHeight / 2)),   // Tip pointing down into wheel
+                new Point(cx - pointerWidth / 2, pointerTop),    // Top left
+                new Point(cx + pointerWidth / 2, pointerTop)     // Top right
             };
         }
 

@@ -9,6 +9,9 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
+using System.Windows.Shapes;
 
 namespace RandomWheel.Views
 {
@@ -18,6 +21,19 @@ namespace RandomWheel.Views
         private readonly CsvService _csvService = new();
         private const int LargeListWarningThreshold = 500;
         private bool _sidebarVisible = true;
+        
+        private static readonly Random _random = new();
+        private static readonly Color[] ConfettiColors =
+        {
+            Color.FromRgb(255, 107, 107),  // Red
+            Color.FromRgb(78, 205, 196),   // Teal
+            Color.FromRgb(255, 230, 109),  // Yellow
+            Color.FromRgb(170, 111, 255),  // Purple
+            Color.FromRgb(255, 159, 243),  // Pink
+            Color.FromRgb(46, 213, 115),   // Green
+            Color.FromRgb(30, 144, 255),   // Blue
+            Color.FromRgb(255, 165, 2),    // Orange
+        };
 
         public MainWindow()
         {
@@ -491,14 +507,16 @@ namespace RandomWheel.Views
             if (winnerIndex >= 0 && winnerIndex < unmarkedItems.Count)
             {
                 var winner = unmarkedItems[winnerIndex];
-                var result = MessageBox.Show(
-                    $"Winner: {winner.Name}\n\nMark as selected and hide from future spins?",
-                    "Spin Result",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Information
-                );
+                
+                // Start confetti animation
+                StartConfettiAnimation();
+                
+                var dialog = new WinnerDialog(winner.Name)
+                {
+                    Owner = this
+                };
 
-                if (result == MessageBoxResult.Yes)
+                if (dialog.ShowDialog() == true && dialog.MarkAsSelected)
                 {
                     _vm.MarkWinner(winnerIndex);
                     UpdateWheelDisplay();
@@ -508,6 +526,128 @@ namespace RandomWheel.Views
                 {
                     Wheel.ResetRotation();
                 }
+                
+                // Clear confetti after dialog closes
+                ConfettiCanvas.Children.Clear();
+            }
+        }
+        
+        private void StartConfettiAnimation()
+        {
+            ConfettiCanvas.Children.Clear();
+            int confettiCount = 150;
+
+            for (int i = 0; i < confettiCount; i++)
+            {
+                var confetti = CreateConfettiPiece();
+                ConfettiCanvas.Children.Add(confetti);
+
+                // Random starting position across the entire window width
+                double startX = _random.NextDouble() * ActualWidth;
+                double startY = -20 - (_random.NextDouble() * 200); // Start above the window
+
+                Canvas.SetLeft(confetti, startX);
+                Canvas.SetTop(confetti, startY);
+
+                // Animate falling
+                AnimateConfetti(confetti, startX, startY, i * 20); // Stagger start times
+            }
+        }
+
+        private Shape CreateConfettiPiece()
+        {
+            var color = ConfettiColors[_random.Next(ConfettiColors.Length)];
+            var shapeType = _random.Next(3);
+
+            Shape shape;
+            if (shapeType == 0)
+            {
+                // Rectangle
+                shape = new Rectangle
+                {
+                    Width = 10 + _random.NextDouble() * 8,
+                    Height = 14 + _random.NextDouble() * 10,
+                    Fill = new SolidColorBrush(color),
+                    RadiusX = 1,
+                    RadiusY = 1
+                };
+            }
+            else if (shapeType == 1)
+            {
+                // Circle
+                double size = 8 + _random.NextDouble() * 8;
+                shape = new Ellipse
+                {
+                    Width = size,
+                    Height = size,
+                    Fill = new SolidColorBrush(color)
+                };
+            }
+            else
+            {
+                // Small square
+                double size = 8 + _random.NextDouble() * 6;
+                shape = new Rectangle
+                {
+                    Width = size,
+                    Height = size,
+                    Fill = new SolidColorBrush(color)
+                };
+            }
+
+            shape.RenderTransformOrigin = new Point(0.5, 0.5);
+            shape.RenderTransform = new RotateTransform(_random.NextDouble() * 360);
+            shape.Opacity = 0.9;
+
+            return shape;
+        }
+
+        private void AnimateConfetti(Shape confetti, double startX, double startY, int delayMs)
+        {
+            var duration = TimeSpan.FromSeconds(3.0 + _random.NextDouble() * 2.0);
+            var delay = TimeSpan.FromMilliseconds(delayMs);
+
+            // Horizontal sway
+            double swayAmount = 40 + _random.NextDouble() * 60;
+            double swayDirection = _random.Next(2) == 0 ? 1 : -1;
+
+            // Fall animation (Y position)
+            var fallAnimation = new DoubleAnimation
+            {
+                From = startY,
+                To = ActualHeight + 50,
+                Duration = duration,
+                BeginTime = delay,
+                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseIn }
+            };
+
+            // Sway animation (X position)
+            var swayAnimation = new DoubleAnimationUsingKeyFrames
+            {
+                Duration = duration,
+                BeginTime = delay
+            };
+            swayAnimation.KeyFrames.Add(new LinearDoubleKeyFrame(startX, KeyTime.FromPercent(0)));
+            swayAnimation.KeyFrames.Add(new LinearDoubleKeyFrame(startX + swayAmount * swayDirection, KeyTime.FromPercent(0.25)));
+            swayAnimation.KeyFrames.Add(new LinearDoubleKeyFrame(startX - swayAmount * swayDirection * 0.5, KeyTime.FromPercent(0.5)));
+            swayAnimation.KeyFrames.Add(new LinearDoubleKeyFrame(startX + swayAmount * swayDirection * 0.3, KeyTime.FromPercent(0.75)));
+            swayAnimation.KeyFrames.Add(new LinearDoubleKeyFrame(startX, KeyTime.FromPercent(1)));
+
+            // Rotation animation
+            var rotateAnimation = new DoubleAnimation
+            {
+                From = 0,
+                To = 360 * (_random.Next(2) == 0 ? 1 : -1) * (1 + _random.NextDouble()),
+                Duration = duration,
+                BeginTime = delay
+            };
+
+            confetti.BeginAnimation(Canvas.TopProperty, fallAnimation);
+            confetti.BeginAnimation(Canvas.LeftProperty, swayAnimation);
+
+            if (confetti.RenderTransform is RotateTransform rotateTransform)
+            {
+                rotateTransform.BeginAnimation(RotateTransform.AngleProperty, rotateAnimation);
             }
         }
 
