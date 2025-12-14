@@ -30,14 +30,14 @@
                     <!-- Left: List selector and management -->
                     <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                         <TextBlock Text="List:" VerticalAlignment="Center" Style="{StaticResource TitleStyle}" Margin="0,0,8,0" />
-                        <ComboBox Width="200" ItemsSource="{Binding Lists}" DisplayMemberPath="Name" SelectedItem="{Binding CurrentList}" VerticalAlignment="Center" />
-                        <Button Content="Rename" Click="RenameList_Click" Style="{StaticResource ModernButtonStyle}" Margin="8,0,0,0" />
-                        <Button Content="New" Command="{Binding NewListCommand}" Style="{StaticResource ModernButtonStyle}" Margin="8,0,0,0" />
-                        <Button Content="Delete" Click="DeleteList_Click" Style="{StaticResource ModernButtonStyle}" Margin="8,0,0,0" />
+                        <ComboBox x:Name="ListComboBox" Width="200" ItemsSource="{Binding Lists}" DisplayMemberPath="Name" SelectedItem="{Binding CurrentList}" VerticalAlignment="Center" />
+                        <Button x:Name="RenameButton" Content="Rename" Click="RenameList_Click" Style="{StaticResource ModernButtonStyle}" Margin="8,0,0,0" />
+                        <Button x:Name="NewListButton" Content="New" Command="{Binding NewListCommand}" Style="{StaticResource ModernButtonStyle}" Margin="8,0,0,0" />
+                        <Button x:Name="DeleteButton" Content="Delete" Click="DeleteList_Click" Style="{StaticResource ModernButtonStyle}" Margin="8,0,0,0" />
                     </StackPanel>
                     
                     <!-- Right: Menu button for file operations -->
-                    <Button Grid.Column="2" 
+                    <Button x:Name="OptionsButton" Grid.Column="2" 
                             Style="{StaticResource ModernButtonStyle}"
                             Padding="12,8"
                             Content="Options"
@@ -48,6 +48,13 @@
                                 <MenuItem Header="Export CSV..." Click="ExportCsv_Click" />
                                 <Separator />
                                 <MenuItem Header="View Audit Log" Command="{Binding ViewLogCommand}" />
+                                <Separator />
+                                <MenuItem x:Name="WinnerSoundEnabledMenuItem" 
+                                          Header="Winner Sound Enabled" 
+                                          IsCheckable="True"
+                                          Click="WinnerSoundEnabled_Click" />
+                                <MenuItem Header="Choose Custom Sound..." Click="ChooseCustomSound_Click" />
+                                <MenuItem Header="Reset to Default Sound" Click="ResetDefaultSound_Click" />
                             </ContextMenu>
                         </Button.ContextMenu>
                     </Button>
@@ -144,7 +151,7 @@
                                          Height="36"
                                          VerticalContentAlignment="Center"
                                          Margin="0,0,0,8" />
-                                <Button Content="Add Item" 
+                                <Button x:Name="AddItemButton" Content="Add Item" 
                                         Click="AddItem_Click"
                                         Style="{StaticResource ModernButtonStyle}" />
                             </StackPanel>
@@ -159,7 +166,7 @@
                                          TextWrapping="Wrap"
                                          Padding="8"
                                          Margin="0,0,0,8" />
-                                <Button Content="Add Multiple" 
+                                <Button x:Name="BulkAddButton" Content="Add Multiple" 
                                         Click="BulkAdd_Click"
                                         Style="{StaticResource ModernButtonStyle}" />
                             </StackPanel>
@@ -191,13 +198,14 @@
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
 
-                    <!-- Wheel Container -->
+                    <!-- Wheel Container with clipping to prevent zoom overflow -->
                     <Border Grid.Row="0" Background="{StaticResource SurfaceBrush}" 
                             BorderBrush="{StaticResource BorderBrush}" 
                             BorderThickness="1"
                             CornerRadius="8"
-                            Padding="16">
-                        <Grid>
+                            Padding="16"
+                            ClipToBounds="True">
+                        <Grid ClipToBounds="True">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="*" />
                                 <RowDefinition Height="Auto" />
@@ -217,7 +225,8 @@
                             <local:WheelControl x:Name="Wheel" 
                                                 Grid.Row="0"
                                                 HorizontalAlignment="Stretch" 
-                                                VerticalAlignment="Stretch" />
+                                                VerticalAlignment="Stretch"
+                                                ClipToBounds="True" />
 
                             <!-- Item Count Info -->
                             <TextBlock x:Name="ItemCountInfo"
@@ -229,19 +238,35 @@
                         </Grid>
                     </Border>
 
-                    <!-- Spin Button -->
-                    <Button x:Name="SpinButton"
-                            Grid.Row="1" 
-                            Content="SPIN" 
-                            Style="{StaticResource AccentButtonStyle}"
-                            Padding="24,16"
-                            FontSize="18"
-                            FontWeight="Bold"
-                            Margin="0,16,0,0"
-                            HorizontalAlignment="Center"
-                            Width="200"
-                            Cursor="Hand"
-                            Click="SpinButton_Click" />
+                    <!-- Button Row -->
+                    <StackPanel Grid.Row="1" 
+                                Orientation="Horizontal" 
+                                HorizontalAlignment="Center" 
+                                Margin="0,16,0,0">
+                        
+                        <!-- Shuffle Button -->
+                        <Button x:Name="ShuffleButton"
+                                Content="Shuffle" 
+                                Style="{StaticResource ModernButtonStyle}"
+                                Padding="20,16"
+                                FontSize="16"
+                                FontWeight="SemiBold"
+                                Margin="0,0,16,0"
+                                Width="120"
+                                Cursor="Hand"
+                                Click="ShuffleButton_Click" />
+                        
+                        <!-- Spin Button -->
+                        <Button x:Name="SpinButton"
+                                Content="SPIN" 
+                                Style="{StaticResource AccentButtonStyle}"
+                                Padding="24,16"
+                                FontSize="18"
+                                FontWeight="Bold"
+                                Width="200"
+                                Cursor="Hand"
+                                Click="SpinButton_Click" />
+                    </StackPanel>
                 </Grid>
             </Grid>
         </DockPanel>

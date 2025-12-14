@@ -23,8 +23,22 @@ Download the latest version from the [Releases](../../releases) page.
 ### Fair Random Selection
 Every item has an equal chance of being selected. The winner is chosen using a cryptographically secure random number generator — the same technology used in security applications — ensuring truly unbiased results.
 
-### Beautiful Spinning Wheel
-Watch the colorful wheel spin with a satisfying animation that gradually slows down before landing on the winner. Each item gets its own vibrant color segment.
+### Dramatic Spinning Wheel
+Watch the colorful wheel spin with a suspenseful animation that gradually slows to a crawl before landing on the winner. Features include:
+- **Zoom effect** — The wheel zooms in as it slows down, focusing on the pointer area
+- **Edge landing** — The wheel lands near the edge of segments for maximum suspense
+- **Confetti celebration** — Colorful confetti falls across the screen when a winner is chosen
+- **Winner sound** — A customizable sound plays when the winner is revealed
+
+### Winner Celebration
+When the wheel stops, a beautiful styled dialog announces the winner with:
+- Large, prominent winner name display
+- Festive confetti animation
+- Custom victory sound (customizable)
+- Option to mark the winner as selected or keep them in the pool
+
+### Shuffle
+Shuffle your list to randomize the visual order of items on the wheel. This is purely cosmetic but great for mixing things up before a spin.
 
 ### Multiple Lists
 Create and manage multiple lists for different purposes:
@@ -46,9 +60,16 @@ Mark items as "selected" to exclude them from future spins. Perfect for:
 ### Audit Log
 Every spin is logged with timestamps, so you have a record of all selections made.
 
+### Customizable Sound
+Personalize the winner announcement with your own sound:
+- **Options > Choose Custom Sound** — Select any .mp3, .wav, .wma, or .aac file
+- **Options > Winner Sound Enabled** — Toggle the sound on or off
+- **Options > Reset to Default Sound** — Restore the built-in sound
+
 ### Flexible Display
 - Collapse the sidebar to give the wheel maximum screen space
 - The wheel looks great on any screen size
+- Adjacent segments never have the same color for easy visibility
 
 ---
 
@@ -63,9 +84,13 @@ Every spin is logged with timestamps, so you have a record of all selections mad
 ### Spinning the Wheel
 
 1. Click the big **SPIN** button
-2. Watch the wheel spin!
-3. When it stops, you'll see the winner
-4. Choose whether to mark the item as "selected" (removes it from future spins) or leave it in
+2. Watch the wheel spin and zoom in dramatically!
+3. Enjoy the confetti celebration when it stops
+4. Choose whether to mark the winner as "selected" (removes them from future spins) or keep them in
+
+### Shuffling the Wheel
+
+Click the **Shuffle** button to randomize the order of items on the wheel. This changes the visual layout but doesn't affect the fairness of spins.
 
 ### Managing Items
 
@@ -127,6 +152,11 @@ The audit log is saved to:
 %APPDATA%\RandomWheel\audit.log
 ```
 
+Your settings (including custom sound preferences) are saved to:
+```
+%APPDATA%\RandomWheel\settings.json
+```
+
 ---
 
 ## Tips & Tricks
@@ -135,6 +165,8 @@ The audit log is saved to:
 - **Bulk Paste**: Copy a column from Excel or a list from anywhere and paste it into Bulk Add
 - **Reset All**: If everyone's been selected, the spin button will offer to reset all items
 - **Large Lists**: The wheel handles hundreds of items, automatically adjusting text size
+- **Shuffle First**: Use Shuffle before spinning to mix up the visual order for variety
+- **Custom Sounds**: Set a fun victory sound via Options > Choose Custom Sound
 
 ---
 

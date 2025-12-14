@@ -2,10 +2,16 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              Background="Transparent"
-             ClipToBounds="True"
+             ClipToBounds="False"
              SizeChanged="UserControl_SizeChanged">
-    <!-- Outer container that does NOT rotate - clips content -->
-    <Grid Background="Transparent" ClipToBounds="True">
+    <!-- Outer container with zoom transform -->
+    <Grid x:Name="WheelContainer" Background="Transparent" ClipToBounds="False">
+        <Grid.RenderTransform>
+            <ScaleTransform x:Name="WheelZoom" ScaleX="1" ScaleY="1" />
+        </Grid.RenderTransform>
+        <Grid.RenderTransformOrigin>
+            <Point X="0.5" Y="0"/>
+        </Grid.RenderTransformOrigin>
         
         <!-- Inner Grid that ROTATES (contains wheel segments) -->
         <Grid x:Name="WheelGrid" ClipToBounds="True">
@@ -21,8 +27,9 @@
         <Canvas x:Name="PointerCanvas" ClipToBounds="False">
             <Polygon x:Name="WinnerPointer"
                      Fill="#FF5722" 
-                     Stroke="#D84315"
-                     StrokeThickness="2" />
+                     Stroke="#000000"
+                     StrokeThickness="3"
+                     StrokeLineJoin="Round" />
         </Canvas>
     </Grid>
 </UserControl>

@@ -5,6 +5,7 @@ using RandomWheel.Services;
 using System;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -19,8 +20,13 @@ namespace RandomWheel.Views
     {
         private MainViewModel? _vm;
         private readonly CsvService _csvService = new();
+        private readonly SoundService _soundService = new();
+        private readonly SettingsService _settingsService = new();
         private const int LargeListWarningThreshold = 500;
         private bool _sidebarVisible = true;
+        private bool _isShuffling = false;
+        private bool _isSpinning = false;
+        private bool _isBulkOperating = false;
         
         private static readonly Random _random = new();
         private static readonly Color[] ConfettiColors =
@@ -75,7 +81,7 @@ namespace RandomWheel.Views
             {
                 // Initial render
                 UpdateWheelDisplay();
-                UpdateSpinButtonState();
+                UpdateInteractiveControlsState();
                 
                 // Subscribe to list changes
                 _vm.PropertyChanged += (s, e) =>
@@ -84,7 +90,7 @@ namespace RandomWheel.Views
                     {
                         SubscribeToCurrentListItems();
                         UpdateWheelDisplay();
-                        UpdateSpinButtonState();
+                        UpdateInteractiveControlsState();
                         CheckListSize();
                     }
                 };
@@ -101,8 +107,9 @@ namespace RandomWheel.Views
             // Subscribe to collection changes
             _vm.CurrentList.Items.CollectionChanged += (s, e) =>
             {
+                if (_isShuffling || _isBulkOperating) return; // Skip updates during bulk operations
                 UpdateWheelDisplay();
-                UpdateSpinButtonState();
+                UpdateInteractiveControlsState();
             };
 
             // Subscribe to each item's PropertyChanged for IsMarked changes
@@ -114,6 +121,7 @@ namespace RandomWheel.Views
             // Also subscribe when new items are added
             _vm.CurrentList.Items.CollectionChanged += (s, e) =>
             {
+                if (_isShuffling || _isBulkOperating) return; // Skip updates during bulk operations
                 if (e.NewItems != null)
                 {
                     foreach (ListItem item in e.NewItems)
@@ -129,14 +137,35 @@ namespace RandomWheel.Views
             if (e.PropertyName == nameof(ListItem.IsMarked))
             {
                 UpdateWheelDisplay();
-                UpdateSpinButtonState();
+                UpdateInteractiveControlsState();
             }
         }
 
-        private void UpdateSpinButtonState()
+        private void UpdateInteractiveControlsState()
         {
-            bool hasUnmarkedItems = _vm?.CurrentList?.Items.Any(i => !i.IsMarked) == true;
-            SpinButton.IsEnabled = hasUnmarkedItems;
+            bool isBusy = _isSpinning || _isShuffling || _isBulkOperating;
+            bool hasCurrentList = _vm?.CurrentList != null;
+            bool hasItems = hasCurrentList && _vm!.CurrentList!.Items.Count > 0;
+            bool hasUnmarkedItems = hasCurrentList && _vm!.CurrentList!.Items.Any(i => !i.IsMarked);
+            bool hasMultipleItems = hasCurrentList && _vm!.CurrentList!.Items.Count >= 2;
+
+            // Top bar controls
+            ListComboBox.IsEnabled = !isBusy;
+            RenameButton.IsEnabled = !isBusy && hasCurrentList;
+            NewListButton.IsEnabled = !isBusy;
+            DeleteButton.IsEnabled = !isBusy && hasCurrentList;
+            OptionsButton.IsEnabled = !isBusy;
+
+            // Sidebar controls
+            ItemsGrid.IsEnabled = !isBusy;
+            AddBox.IsEnabled = !isBusy;
+            AddItemButton.IsEnabled = !isBusy && hasCurrentList;
+            BulkBox.IsEnabled = !isBusy;
+            BulkAddButton.IsEnabled = !isBusy && hasCurrentList;
+
+            // Wheel controls
+            SpinButton.IsEnabled = !isBusy && hasUnmarkedItems;
+            ShuffleButton.IsEnabled = !isBusy && hasMultipleItems;
         }
 
         private void UpdateWheelDisplay()
@@ -201,6 +230,12 @@ namespace RandomWheel.Views
         {
             if (sender is Button button && button.ContextMenu != null)
             {
+                // Update checkbox state before showing menu
+                if (button.ContextMenu.Items.OfType<MenuItem>().FirstOrDefault(m => m.Name == "WinnerSoundEnabledMenuItem") is MenuItem soundMenuItem)
+                {
+                    soundMenuItem.IsChecked = _settingsService.WinnerSoundEnabled;
+                }
+                
                 button.ContextMenu.PlacementTarget = button;
                 button.ContextMenu.IsOpen = true;
             }
@@ -274,6 +309,13 @@ namespace RandomWheel.Views
 
         private void ItemsGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
         {
+            // Block editing during spin/shuffle operations
+            if (_isSpinning || _isShuffling || _isBulkOperating)
+            {
+                e.Cancel = true;
+                return;
+            }
+            
             if (e.EditAction == DataGridEditAction.Cancel)
                 return;
 
@@ -315,6 +357,17 @@ namespace RandomWheel.Views
 
         private void MarkedCheckBox_Click(object sender, RoutedEventArgs e)
         {
+            // Block marking during spin/shuffle operations
+            if (_isSpinning || _isShuffling || _isBulkOperating)
+            {
+                // Revert the checkbox state
+                if (sender is System.Windows.Controls.CheckBox checkBox)
+                {
+                    checkBox.IsChecked = !checkBox.IsChecked;
+                }
+                return;
+            }
+            
             // Wheel and button state will be updated via PropertyChanged subscription
             _vm?.Save();
         }
@@ -329,7 +382,7 @@ namespace RandomWheel.Views
             // Check for duplicates
             if (_vm.CurrentList.Items.Any(i => string.Equals(i.Name, itemName, StringComparison.OrdinalIgnoreCase)))
             {
-                MessageBox.Show($"An item named \"{itemName}\" already exists in this list.",
+                MessageBox.Show($"An item named \"itemName\" already exists in this list.",
                     "Duplicate Item",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
@@ -339,7 +392,7 @@ namespace RandomWheel.Views
             _vm.AddItem(itemName);
             AddBox.Clear();
             UpdateWheelDisplay();
-            UpdateSpinButtonState();
+            UpdateInteractiveControlsState();
         }
 
         private void BulkAdd_Click(object sender, RoutedEventArgs e)
@@ -347,41 +400,54 @@ namespace RandomWheel.Views
             if (_vm?.CurrentList == null || string.IsNullOrWhiteSpace(BulkBox.Text))
                 return;
 
-            var parts = BulkBox.Text.Split(new[] { ',', '\n', ';' }, StringSplitOptions.RemoveEmptyEntries)
-                .Select(p => p.Trim())
-                .Where(p => !string.IsNullOrWhiteSpace(p))
-                .ToList();
+            if (_isBulkOperating || _isSpinning || _isShuffling)
+                return;
 
-            var duplicates = new System.Collections.Generic.List<string>();
-            var added = 0;
+            _isBulkOperating = true;
+            UpdateInteractiveControlsState();
 
-            foreach (var part in parts)
+            try
             {
-                if (_vm.CurrentList.Items.Any(i => string.Equals(i.Name, part, StringComparison.OrdinalIgnoreCase)))
+                var parts = BulkBox.Text.Split(new[] { ',', '\n', ';' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(p => p.Trim())
+                    .Where(p => !string.IsNullOrWhiteSpace(p))
+                    .ToList();
+
+                var duplicates = new System.Collections.Generic.List<string>();
+                var added = 0;
+
+                foreach (var part in parts)
                 {
-                    duplicates.Add(part);
+                    if (_vm.CurrentList.Items.Any(i => string.Equals(i.Name, part, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        duplicates.Add(part);
+                    }
+                    else
+                    {
+                        _vm.AddItem(part);
+                        added++;
+                    }
                 }
-                else
+
+                BulkBox.Clear();
+                UpdateWheelDisplay();
+
+                if (duplicates.Count > 0)
                 {
-                    _vm.AddItem(part);
-                    added++;
+                    string duplicateList = string.Join(", ", duplicates.Take(5));
+                    if (duplicates.Count > 5)
+                        duplicateList += $", ... and {duplicates.Count - 5} more";
+
+                    MessageBox.Show($"Added {added} item(s).\n\nSkipped {duplicates.Count} duplicate(s): {duplicateList}",
+                        "Bulk Add Complete",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
                 }
             }
-
-            BulkBox.Clear();
-            UpdateWheelDisplay();
-            UpdateSpinButtonState();
-
-            if (duplicates.Count > 0)
+            finally
             {
-                string duplicateList = string.Join(", ", duplicates.Take(5));
-                if (duplicates.Count > 5)
-                    duplicateList += $", ... and {duplicates.Count - 5} more";
-
-                MessageBox.Show($"Added {added} item(s).\n\nSkipped {duplicates.Count} duplicate(s): {duplicateList}",
-                    "Bulk Add Complete",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
+                _isBulkOperating = false;
+                UpdateInteractiveControlsState();
             }
         }
 
@@ -406,17 +472,25 @@ namespace RandomWheel.Views
                     return;
                 }
 
+                _isBulkOperating = true;
+                UpdateInteractiveControlsState();
+                
                 try
                 {
                     _vm?.ImportCsv(ofd.FileName);
                     UpdateWheelDisplay();
-                    UpdateSpinButtonState();
+                    UpdateInteractiveControlsState();
                     AddBox.Clear();
                     MessageBox.Show("Items imported successfully", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
                 catch (Exception ex)
                 {
                     MessageBox.Show($"Error importing CSV:\n{ex.Message}", "Import Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                finally
+                {
+                    _isBulkOperating = false;
+                    UpdateInteractiveControlsState();
                 }
             }
         }
@@ -450,6 +524,52 @@ namespace RandomWheel.Views
             }
         }
 
+        private void WinnerSoundEnabled_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menuItem)
+            {
+                _settingsService.WinnerSoundEnabled = menuItem.IsChecked;
+            }
+        }
+
+        private void ChooseCustomSound_Click(object sender, RoutedEventArgs e)
+        {
+            var ofd = new OpenFileDialog
+            {
+                Filter = "Audio files (*.wav;*.mp3;*.wma;*.aac)|*.wav;*.mp3;*.wma;*.aac|All files (*.*)|*.*",
+                Title = "Select Winner Sound"
+            };
+
+            if (ofd.ShowDialog() == true)
+            {
+                if (_soundService.IsValidSoundFile(ofd.FileName))
+                {
+                    _settingsService.CustomWinnerSoundPath = ofd.FileName;
+                    
+                    // Play a preview
+                    _soundService.PlayWinnerSound(ofd.FileName);
+                    
+                    MessageBox.Show($"Custom sound set:\n{System.IO.Path.GetFileName(ofd.FileName)}", 
+                        "Sound Updated", 
+                        MessageBoxButton.OK, 
+                        MessageBoxImage.Information);
+                }
+                else
+                {
+                    MessageBox.Show("Invalid audio file. Please select a .wav, .mp3, .wma, or .aac file.",
+                        "Invalid File",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                }
+            }
+        }
+
+        private void ResetDefaultSound_Click(object sender, RoutedEventArgs e)
+        {
+            _settingsService.CustomWinnerSoundPath = null;
+            MessageBox.Show("Winner sound reset to default.", "Sound Reset", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
         private string SanitizeFilename(string filename)
         {
             foreach (char c in System.IO.Path.GetInvalidFileNameChars())
@@ -462,6 +582,66 @@ namespace RandomWheel.Views
             ExecuteSpin();
         }
 
+        private void ShuffleButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_vm?.CurrentList == null || _vm.CurrentList.Items.Count < 2)
+                return;
+
+            if (_isShuffling || _isSpinning || _isBulkOperating)
+                return;
+
+            _isShuffling = true;
+            UpdateInteractiveControlsState();
+            
+            // Force UI to update before starting the shuffle
+            Dispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.Render);
+            
+            try
+            {
+                var items = _vm.CurrentList.Items;
+                int n = items.Count;
+                
+                // Create shuffled list
+                var itemList = items.ToList();
+                var random = new Random();
+                for (int i = n - 1; i > 0; i--)
+                {
+                    int j = random.Next(i + 1);
+                    var temp = itemList[i];
+                    itemList[i] = itemList[j];
+                    itemList[j] = temp;
+                }
+                
+                // Temporarily clear binding to prevent cascading updates
+                System.Windows.Data.BindingOperations.ClearBinding(ItemsGrid, DataGrid.ItemsSourceProperty);
+                ItemsGrid.ItemsSource = null;
+                
+                // Clear without triggering repeated updates
+                while (items.Count > 0)
+                {
+                    items.RemoveAt(items.Count - 1);
+                }
+                
+                // Add all at once
+                foreach (var item in itemList)
+                {
+                    items.Add(item);
+                }
+                
+                // Restore the binding to CurrentList.Items
+                var binding = new System.Windows.Data.Binding("CurrentList.Items");
+                ItemsGrid.SetBinding(DataGrid.ItemsSourceProperty, binding);
+                
+                _vm.Save();
+                UpdateWheelDisplay();
+            }
+            finally
+            {
+                _isShuffling = false;
+                UpdateInteractiveControlsState();
+            }
+        }
+
         private void ExecuteSpin()
         {
             if (_vm?.CurrentList == null)
@@ -469,6 +649,9 @@ namespace RandomWheel.Views
                 MessageBox.Show("No list selected", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
+
+            if (_isSpinning || _isShuffling)
+                return;
 
             var unmarkedItems = _vm.CurrentList.Items.Where(i => !i.IsMarked).ToList();
             if (unmarkedItems.Count == 0)
@@ -486,27 +669,46 @@ namespace RandomWheel.Views
                         item.IsMarked = false;
                     _vm.Save();
                     UpdateWheelDisplay();
-                    UpdateSpinButtonState();
+                    UpdateInteractiveControlsState();
                 }
                 return;
             }
+
+            _isSpinning = true;
+            UpdateInteractiveControlsState();
 
             var winnerIdx = _vm.ExecuteSpin();
             if (winnerIdx >= 0)
             {
                 Wheel.Spin(winnerIdx, OnSpinComplete);
             }
+            else
+            {
+                _isSpinning = false;
+                UpdateInteractiveControlsState();
+            }
         }
 
         private void OnSpinComplete(int winnerIndex)
         {
+            _isSpinning = false;
+            
             if (_vm?.CurrentList == null)
+            {
+                UpdateInteractiveControlsState();
                 return;
+            }
 
             var unmarkedItems = _vm.CurrentList.Items.Where(i => !i.IsMarked).ToList();
             if (winnerIndex >= 0 && winnerIndex < unmarkedItems.Count)
             {
                 var winner = unmarkedItems[winnerIndex];
+                
+                // Play winner sound
+                if (_settingsService.WinnerSoundEnabled)
+                {
+                    _soundService.PlayWinnerSound(_settingsService.CustomWinnerSoundPath);
+                }
                 
                 // Start confetti animation
                 StartConfettiAnimation();
@@ -520,16 +722,18 @@ namespace RandomWheel.Views
                 {
                     _vm.MarkWinner(winnerIndex);
                     UpdateWheelDisplay();
-                    UpdateSpinButtonState();
                 }
                 else
                 {
                     Wheel.ResetRotation();
                 }
                 
-                // Clear confetti after dialog closes
+                // Stop sound and clear confetti after dialog closes
+                _soundService.Stop();
                 ConfettiCanvas.Children.Clear();
             }
+            
+            UpdateInteractiveControlsState();
         }
         
         private void StartConfettiAnimation()
@@ -674,7 +878,7 @@ namespace RandomWheel.Views
                 _vm.DeleteCurrentList();
                 SubscribeToCurrentListItems();
                 UpdateWheelDisplay();
-                UpdateSpinButtonState();
+                UpdateInteractiveControlsState();
             }
         }
 

@@ -8,7 +8,8 @@
         AllowsTransparency="True"
         Background="Transparent"
         ResizeMode="NoResize"
-        ShowInTaskbar="False">
+        ShowInTaskbar="False"
+        Loaded="Window_Loaded">
     
     <!-- Dialog Content -->
     <Border Background="{StaticResource SurfaceBrush}" 

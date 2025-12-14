@@ -119,6 +119,9 @@ namespace RandomWheel.Views
 
             double anglePerSegment = 360.0 / _unmarkedItems.Count;
 
+            // Pre-calculate colors to ensure no adjacent segments have the same color
+            var segmentColors = GetNonAdjacentColors(_unmarkedItems.Count);
+
             for (int i = 0; i < _unmarkedItems.Count; i++)
             {
                 double startAngle = i * anglePerSegment;
@@ -127,11 +130,10 @@ namespace RandomWheel.Views
                 // Create segment path
                 var segment = CreateSegmentPath(cx, cy, radius, startAngle, endAngle);
                 
-                // Assign color from palette
-                Color segmentColor = WheelColors[i % WheelColors.Length];
-                segment.Fill = new SolidColorBrush(segmentColor);
-                segment.Stroke = Brushes.White;
-                segment.StrokeThickness = 2;
+                // Assign color from pre-calculated list - no stroke for seamless segments
+                segment.Fill = new SolidColorBrush(segmentColors[i]);
+                segment.Stroke = null;
+                segment.StrokeThickness = 0;
 
                 WheelCanvas.Children.Add(segment);
 
@@ -141,6 +143,54 @@ namespace RandomWheel.Views
             }
 
             UpdateRotationCenter();
+        }
+
+        /// <summary>
+        /// Gets a list of colors ensuring no two adjacent colors are the same.
+        /// Also ensures first and last colors are different (since wheel is circular).
+        /// </summary>
+        private List<Color> GetNonAdjacentColors(int count)
+        {
+            if (count == 0) return new List<Color>();
+            if (count == 1) return new List<Color> { WheelColors[0] };
+
+            var result = new List<Color>(count);
+            int colorCount = WheelColors.Length;
+            int lastColorIndex = -1;
+            int firstColorIndex = 0;
+
+            for (int i = 0; i < count; i++)
+            {
+                int colorIndex;
+                
+                if (i == 0)
+                {
+                    // First segment - just pick first color
+                    colorIndex = 0;
+                    firstColorIndex = colorIndex;
+                }
+                else if (i == count - 1 && count > 2)
+                {
+                    // Last segment - must differ from both previous and first (circular)
+                    colorIndex = 0;
+                    while (colorIndex == lastColorIndex || colorIndex == firstColorIndex)
+                    {
+                        colorIndex = (colorIndex + 1) % colorCount;
+                        // Safety check to avoid infinite loop if not enough colors
+                        if (colorIndex == 0 && colorCount < 3) break;
+                    }
+                }
+                else
+                {
+                    // Middle segments - just differ from previous
+                    colorIndex = (lastColorIndex + 1) % colorCount;
+                }
+
+                result.Add(WheelColors[colorIndex]);
+                lastColorIndex = colorIndex;
+            }
+
+            return result;
         }
 
         private Path CreateSegmentPath(double cx, double cy, double radius, double startDeg, double endDeg)
@@ -208,35 +258,35 @@ namespace RandomWheel.Views
             bool isSmallSegment = segmentAngle < 30;
             bool isMediumSegment = segmentAngle < 90;
 
-            // Position text based on segment size - for small segments, position near edge
+            // Position text further from center toward the edge for more space
             double textDistance;
             if (segmentAngle >= 120)
             {
-                textDistance = radius * 0.5;
+                textDistance = radius * 0.62;
             }
             else if (segmentAngle >= 30)
             {
-                textDistance = radius * 0.6;
+                textDistance = radius * 0.70;
             }
             else if (segmentAngle >= 10)
             {
-                textDistance = radius * 0.65;
+                textDistance = radius * 0.75;
             }
             else
             {
-                // Very small segments - position at 75% from center toward edge
-                textDistance = radius * 0.75;
+                // Very small segments - position near edge
+                textDistance = radius * 0.80;
             }
 
             // Calculate text position
             double textX = cx + textDistance * Math.Cos(midRad);
             double textY = cy + textDistance * Math.Sin(midRad);
 
-            // Dynamically adjust font size
+            // Dynamically adjust font size - can be slightly larger with more space
             double fontSize;
             if (segmentAngle >= 120)
             {
-                fontSize = 18 * sizeFactor;
+                fontSize = 16 * sizeFactor;
             }
             else if (segmentAngle >= 30)
             {
@@ -251,20 +301,27 @@ namespace RandomWheel.Views
                 // Very small - use minimum readable size
                 fontSize = 7 * sizeFactor;
             }
-            fontSize = Math.Max(6, Math.Min(fontSize, 20));
+            fontSize = Math.Max(6, Math.Min(fontSize, 18));
 
             // For very small segments, truncate text aggressively
             string displayText = text;
             int maxChars;
             if (segmentAngle < 10)
             {
-                maxChars = (int)Math.Max(3, radius / 25);
+                maxChars = (int)Math.Max(2, radius / 30);
                 if (text.Length > maxChars)
                     displayText = text.Substring(0, maxChars - 1) + "..";
             }
             else if (segmentAngle < 20)
             {
-                maxChars = (int)Math.Max(6, radius / 15);
+                maxChars = (int)Math.Max(5, radius / 18);
+                if (text.Length > maxChars)
+                    displayText = text.Substring(0, maxChars - 2) + "..";
+            }
+            else if (segmentAngle < 45)
+            {
+                // Medium-small segments - also truncate if needed
+                maxChars = (int)Math.Max(8, radius / 12);
                 if (text.Length > maxChars)
                     displayText = text.Substring(0, maxChars - 2) + "..";
             }
@@ -331,7 +388,7 @@ namespace RandomWheel.Views
 
         public void Spin(int winnerIndex, Action<int> onComplete)
         {
-            if (_unmarkedItems.Count == 0)
+            if (_unmarkedItems.Count == 0 || winnerIndex < 0 || winnerIndex >= _unmarkedItems.Count)
             {
                 onComplete?.Invoke(-1);
                 return;
@@ -342,49 +399,85 @@ namespace RandomWheel.Views
 
             double anglePerSegment = 360.0 / _unmarkedItems.Count;
             
-            // Calculate target angle for the winner
-            // Segments are drawn starting from the right (0 degrees = 3 o'clock position)
-            // The pointer is at the TOP (12 o'clock = 270 degrees in standard math, or -90 degrees)
-            // We need to rotate the wheel so the winning segment lands under the top pointer
-            
             double segmentStartAngle = winnerIndex * anglePerSegment;
-            double segmentMidAngle = segmentStartAngle + (anglePerSegment / 2.0);
+            double segmentEndAngle = segmentStartAngle + anglePerSegment;
             
-            // To align segment with TOP pointer:
-            // The top is at -90 degrees (or 270 degrees) from the starting position
-            // We need to rotate the segment's mid-angle to reach the top
-            // Rotation needed = -90 - segmentMidAngle (to bring it to top)
-            // But we want positive rotation, so: 360 - 90 - segmentMidAngle = 270 - segmentMidAngle
-            double targetAngle = 270.0 - segmentMidAngle;
+            // Land near the edge of the segment for more suspense
+            // Randomly choose to land near the START (almost landed on previous item) 
+            // or near the END (almost went to next item)
+            var random = new Random();
+            bool landNearStart = random.Next(2) == 0;
+            double edgeOffset = 0.05 + (random.NextDouble() * 0.08); // 5-13% from edge for closer calls
+            
+            double landingPosition;
+            if (landNearStart)
+            {
+                // Land just past the start edge - looks like it almost stopped on previous item
+                // The wheel rotates clockwise, so "start" of segment is where it enters from
+                landingPosition = segmentStartAngle + (anglePerSegment * edgeOffset);
+            }
+            else
+            {
+                // Land just before the end edge - looks like it almost went to next item
+                landingPosition = segmentEndAngle - (anglePerSegment * edgeOffset);
+            }
+            
+            // To align segment with TOP pointer (pointer is at 270 degrees / 12 o'clock):
+            // We need to rotate so landingPosition ends up at 270 degrees
+            double targetAngle = 270.0 - landingPosition;
             if (targetAngle < 0) targetAngle += 360.0;
             
-            // Number of full rotations before landing (more spins = more dramatic)
-            double fullRotations = 8.0;
+            // Number of full rotations before landing - more spins for dramatic effect
+            double fullRotations = 18.0;
             double baseRotation = fullRotations * 360.0;
             double finalAngle = baseRotation + targetAngle;
 
             // Reset rotation to 0 to start fresh
             WheelRotation.BeginAnimation(RotateTransform.AngleProperty, null);
             WheelRotation.Angle = 0;
+            
+            // Reset zoom
+            WheelZoom.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+            WheelZoom.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+            WheelZoom.ScaleX = 1;
+            WheelZoom.ScaleY = 1;
 
-            // Create the animation - use BeginAnimation directly on the transform
-            var animation = new DoubleAnimation
+            // Spin duration balanced for visual stop matching animation end
+            var spinDuration = TimeSpan.FromSeconds(12);
+            
+            // Create the spin animation with gradual but not excessive slowdown
+            // Power of 4 keeps wheel visibly moving until closer to the end
+            var spinAnimation = new DoubleAnimation
             {
                 From = 0,
                 To = finalAngle,
-                Duration = new Duration(TimeSpan.FromSeconds(6)),
-                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+                Duration = new Duration(spinDuration),
+                EasingFunction = new PowerEase { EasingMode = EasingMode.EaseOut, Power = 4 }
             };
 
+            // Create zoom animation - prominent zoom effect
+            var zoomInAnimation = new DoubleAnimationUsingKeyFrames
+            {
+                Duration = new Duration(spinDuration)
+            };
+            // Stay at 1.0 for first 15%, then zoom to 1.85 over next 70%, hold for final 15%
+            zoomInAnimation.KeyFrames.Add(new LinearDoubleKeyFrame(1.0, KeyTime.FromPercent(0)));
+            zoomInAnimation.KeyFrames.Add(new LinearDoubleKeyFrame(1.0, KeyTime.FromPercent(0.15)));
+            zoomInAnimation.KeyFrames.Add(new EasingDoubleKeyFrame(1.85, KeyTime.FromPercent(0.85), 
+                new QuadraticEase { EasingMode = EasingMode.EaseOut }));
+            zoomInAnimation.KeyFrames.Add(new LinearDoubleKeyFrame(1.85, KeyTime.FromPercent(1.0)));
+
             // Handle completion
-            animation.Completed += (s, e) =>
+            spinAnimation.Completed += (s, e) =>
             {
                 this.IsEnabled = true;
                 onComplete?.Invoke(winnerIndex);
             };
 
-            // Apply animation directly to the RotateTransform's Angle property
-            WheelRotation.BeginAnimation(RotateTransform.AngleProperty, animation);
+            // Apply animations
+            WheelRotation.BeginAnimation(RotateTransform.AngleProperty, spinAnimation);
+            WheelZoom.BeginAnimation(ScaleTransform.ScaleXProperty, zoomInAnimation);
+            WheelZoom.BeginAnimation(ScaleTransform.ScaleYProperty, zoomInAnimation.Clone());
         }
 
         public void ResetRotation()
@@ -392,6 +485,16 @@ namespace RandomWheel.Views
             // Clear any running animation by setting it to null, then reset angle
             WheelRotation.BeginAnimation(RotateTransform.AngleProperty, null);
             WheelRotation.Angle = 0;
+            
+            // Animate zoom back to normal
+            var zoomOutAnimation = new DoubleAnimation
+            {
+                To = 1.0,
+                Duration = new Duration(TimeSpan.FromMilliseconds(300)),
+                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+            };
+            WheelZoom.BeginAnimation(ScaleTransform.ScaleXProperty, zoomOutAnimation);
+            WheelZoom.BeginAnimation(ScaleTransform.ScaleYProperty, zoomOutAnimation.Clone());
         }
     }
 }
