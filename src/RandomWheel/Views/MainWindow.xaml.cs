@@ -564,12 +564,6 @@ namespace RandomWheel.Views
             }
         }
 
-        private void ResetDefaultSound_Click(object sender, RoutedEventArgs e)
-        {
-            _settingsService.CustomWinnerSoundPath = null;
-            MessageBox.Show("Winner sound reset to default.", "Sound Reset", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-
         private string SanitizeFilename(string filename)
         {
             foreach (char c in System.IO.Path.GetInvalidFileNameChars())

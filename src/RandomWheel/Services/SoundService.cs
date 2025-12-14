@@ -7,29 +7,25 @@ namespace RandomWheel.Services
     public class SoundService
     {
         private MediaPlayer? _mediaPlayer;
-        private readonly string _defaultSoundPath;
 
         public SoundService()
         {
-            _defaultSoundPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "winner_sound.mp3");
         }
 
         /// <summary>
-        /// Plays the winner sound. Uses custom sound if set, otherwise uses default.
+        /// Plays the winner sound if a custom sound path is configured.
         /// </summary>
         public void PlayWinnerSound(string? customSoundPath = null)
         {
             try
             {
-                string soundPath = GetSoundPath(customSoundPath);
-                
-                if (string.IsNullOrEmpty(soundPath) || !File.Exists(soundPath))
+                if (string.IsNullOrEmpty(customSoundPath) || !File.Exists(customSoundPath))
                 {
-                    System.Diagnostics.Debug.WriteLine($"Sound file not found: {soundPath}");
+                    System.Diagnostics.Debug.WriteLine($"Sound file not found or not configured: {customSoundPath}");
                     return;
                 }
 
-                System.Diagnostics.Debug.WriteLine($"Playing sound: {soundPath}");
+                System.Diagnostics.Debug.WriteLine($"Playing sound: {customSoundPath}");
 
                 // Stop any currently playing sound
                 Stop();
@@ -49,7 +45,7 @@ namespace RandomWheel.Services
                     System.Diagnostics.Debug.WriteLine($"Media failed: {e.ErrorException?.Message}");
                 };
                 
-                _mediaPlayer.Open(new Uri(soundPath, UriKind.Absolute));
+                _mediaPlayer.Open(new Uri(customSoundPath, UriKind.Absolute));
             }
             catch (Exception ex)
             {
@@ -72,27 +68,6 @@ namespace RandomWheel.Services
             {
                 // Ignore errors when stopping
             }
-        }
-
-        /// <summary>
-        /// Gets the sound path to use, preferring custom path if valid.
-        /// </summary>
-        private string GetSoundPath(string? customSoundPath)
-        {
-            // Use custom path if provided and file exists
-            if (!string.IsNullOrEmpty(customSoundPath) && File.Exists(customSoundPath))
-            {
-                return customSoundPath;
-            }
-
-            // Fall back to default sound
-            if (File.Exists(_defaultSoundPath))
-            {
-                return _defaultSoundPath;
-            }
-
-            System.Diagnostics.Debug.WriteLine($"Default sound not found at: {_defaultSoundPath}");
-            return string.Empty;
         }
 
         /// <summary>

@@ -53,8 +53,7 @@
                                           Header="Winner Sound Enabled" 
                                           IsCheckable="True"
                                           Click="WinnerSoundEnabled_Click" />
-                                <MenuItem Header="Choose Custom Sound..." Click="ChooseCustomSound_Click" />
-                                <MenuItem Header="Reset to Default Sound" Click="ResetDefaultSound_Click" />
+                                <MenuItem Header="Choose Winner Sound..." Click="ChooseCustomSound_Click" />
                             </ContextMenu>
                         </Button.ContextMenu>
                     </Button>

@@ -62,9 +62,8 @@ Every spin is logged with timestamps, so you have a record of all selections mad
 
 ### Customizable Sound
 Personalize the winner announcement with your own sound:
-- **Options > Choose Custom Sound** — Select any .mp3, .wav, .wma, or .aac file
+- **Options > Choose Winner Sound** — Select any .mp3, .wav, .wma, or .aac file
 - **Options > Winner Sound Enabled** — Toggle the sound on or off
-- **Options > Reset to Default Sound** — Restore the built-in sound
 
 ### Flexible Display
 - Collapse the sidebar to give the wheel maximum screen space
