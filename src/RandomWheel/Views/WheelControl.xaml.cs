@@ -60,9 +60,9 @@ namespace RandomWheel.Views
             // Position pointer so it's half above and half overlaying the wheel
             double wheelTop = cy - radius;
             
-            // Create pointer triangle - half above wheel, half overlapping
-            double pointerWidth = Math.Max(16, size * 0.06);
-            double pointerHeight = Math.Max(20, size * 0.08);
+            // Create pointer triangle - narrower and taller for a sharper point
+            double pointerWidth = Math.Max(12, size * 0.04);  // Narrower width
+            double pointerHeight = Math.Max(24, size * 0.10); // Taller height
             double pointerTop = wheelTop - (pointerHeight / 2); // Half above the wheel edge
             
             WinnerPointer.Points = new PointCollection
