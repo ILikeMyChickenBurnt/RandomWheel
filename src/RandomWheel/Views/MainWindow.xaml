@@ -54,6 +54,9 @@
                                           IsCheckable="True"
                                           Click="WinnerSoundEnabled_Click" />
                                 <MenuItem Header="Choose Winner Sound..." Click="ChooseCustomSound_Click" />
+                                <Separator />
+                                <MenuItem Header="Choose Branding Logo..." Click="ChooseBrandingLogo_Click" />
+                                <MenuItem Header="Clear Branding Logo" Click="ClearBrandingLogo_Click" />
                             </ContextMenu>
                         </Button.ContextMenu>
                     </Button>

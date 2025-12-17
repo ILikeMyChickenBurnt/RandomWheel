@@ -35,6 +35,46 @@ namespace RandomWheel.Services
             }
         }
 
+        public string? BrandingLogoPath
+        {
+            get => _settings.BrandingLogoPath;
+            set
+            {
+                _settings.BrandingLogoPath = value;
+                Save();
+            }
+        }
+
+        public double BrandingLogoOffsetX
+        {
+            get => _settings.BrandingLogoOffsetX;
+            set
+            {
+                _settings.BrandingLogoOffsetX = value;
+                Save();
+            }
+        }
+
+        public double BrandingLogoOffsetY
+        {
+            get => _settings.BrandingLogoOffsetY;
+            set
+            {
+                _settings.BrandingLogoOffsetY = value;
+                Save();
+            }
+        }
+
+        public double BrandingLogoScale
+        {
+            get => _settings.BrandingLogoScale;
+            set
+            {
+                _settings.BrandingLogoScale = value;
+                Save();
+            }
+        }
+
         private AppSettings Load()
         {
             try
@@ -71,6 +111,10 @@ namespace RandomWheel.Services
         {
             public string? CustomWinnerSoundPath { get; set; }
             public bool WinnerSoundEnabled { get; set; } = true;
+            public string? BrandingLogoPath { get; set; }
+            public double BrandingLogoOffsetX { get; set; } = 0;
+            public double BrandingLogoOffsetY { get; set; } = 0;
+            public double BrandingLogoScale { get; set; } = 1.0;
         }
     }
 }
