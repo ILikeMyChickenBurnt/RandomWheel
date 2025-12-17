@@ -83,6 +83,17 @@ namespace RandomWheel.Views
                 UpdateWheelDisplay();
                 UpdateInteractiveControlsState();
                 
+                // Load branding logo if configured
+                if (!string.IsNullOrEmpty(_settingsService.BrandingLogoPath) && 
+                    File.Exists(_settingsService.BrandingLogoPath))
+                {
+                    Wheel.SetBrandingLogo(
+                        _settingsService.BrandingLogoPath,
+                        _settingsService.BrandingLogoOffsetX,
+                        _settingsService.BrandingLogoOffsetY,
+                        _settingsService.BrandingLogoScale > 0 ? _settingsService.BrandingLogoScale : 1.0);
+                }
+
                 // Subscribe to list changes
                 _vm.PropertyChanged += (s, e) =>
                 {
@@ -562,6 +573,46 @@ namespace RandomWheel.Views
                         MessageBoxImage.Warning);
                 }
             }
+        }
+
+        private void ChooseBrandingLogo_Click(object sender, RoutedEventArgs e)
+        {
+            var ofd = new OpenFileDialog
+            {
+                Filter = "Image files (*.png;*.jpg;*.jpeg;*.bmp;*.gif)|*.png;*.jpg;*.jpeg;*.bmp;*.gif|All files (*.*)|*.*",
+                Title = "Select Branding Logo"
+            };
+
+            if (ofd.ShowDialog() == true)
+            {
+                if (File.Exists(ofd.FileName))
+                {
+                    var previewWindow = new BrandingLogoPreviewWindow(
+                        ofd.FileName,
+                        _settingsService.BrandingLogoOffsetX,
+                        _settingsService.BrandingLogoOffsetY,
+                        _settingsService.BrandingLogoScale > 0 ? _settingsService.BrandingLogoScale : 1.0);
+                    previewWindow.Owner = this;
+
+                    if (previewWindow.ShowDialog() == true && previewWindow.Applied)
+                    {
+                        _settingsService.BrandingLogoPath = ofd.FileName;
+                        _settingsService.BrandingLogoOffsetX = previewWindow.OffsetX;
+                        _settingsService.BrandingLogoOffsetY = previewWindow.OffsetY;
+                        _settingsService.BrandingLogoScale = previewWindow.Scale;
+                        Wheel.SetBrandingLogo(ofd.FileName, previewWindow.OffsetX, previewWindow.OffsetY, previewWindow.Scale);
+                    }
+                }
+            }
+        }
+
+        private void ClearBrandingLogo_Click(object sender, RoutedEventArgs e)
+        {
+            _settingsService.BrandingLogoPath = null;
+            _settingsService.BrandingLogoOffsetX = 0;
+            _settingsService.BrandingLogoOffsetY = 0;
+            _settingsService.BrandingLogoScale = 1.0;
+            Wheel.ClearBrandingLogo();
         }
 
         private string SanitizeFilename(string filename)

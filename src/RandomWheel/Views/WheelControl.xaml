@@ -23,6 +23,27 @@
             <Canvas x:Name="WheelCanvas" ClipToBounds="True" />
         </Grid>
         
+        <!-- Branding Logo - centered on wheel, does NOT rotate -->
+        <Border x:Name="BrandingLogoBorder"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Visibility="Collapsed"
+                Background="White"
+                CornerRadius="1000"
+                Padding="4">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="8" ShadowDepth="2" Opacity="0.3" />
+            </Border.Effect>
+            <Grid>
+                <Ellipse x:Name="BrandingLogoClip" Width="80" Height="80" Fill="White" />
+                <Image x:Name="BrandingLogoImage" Width="80" Height="80" Stretch="UniformToFill">
+                    <Image.Clip>
+                        <EllipseGeometry x:Name="BrandingLogoClipGeometry" Center="40,40" RadiusX="40" RadiusY="40" />
+                    </Image.Clip>
+                </Image>
+            </Grid>
+        </Border>
+        
         <!-- Winner pointer - STATIC, fixed at top center, pointing DOWN into the wheel -->
         <Canvas x:Name="PointerCanvas" ClipToBounds="False">
             <Polygon x:Name="WinnerPointer"

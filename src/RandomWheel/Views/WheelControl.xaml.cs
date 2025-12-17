@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 
 namespace RandomWheel.Views
@@ -32,6 +33,11 @@ namespace RandomWheel.Views
             Color.FromRgb(103, 58, 183),   // Deep Purple
         };
 
+        // Branding logo offset and scale settings
+        private double _logoOffsetX = 0;
+        private double _logoOffsetY = 0;
+        private double _logoScale = 1.0;
+
         public WheelControl()
         {
             InitializeComponent();
@@ -46,6 +52,7 @@ namespace RandomWheel.Views
             }
             UpdatePointerPosition();
             UpdateRotationCenter();
+            UpdateBrandingLogoSize();
         }
 
         private void UpdatePointerPosition()
@@ -495,6 +502,104 @@ namespace RandomWheel.Views
             };
             WheelZoom.BeginAnimation(ScaleTransform.ScaleXProperty, zoomOutAnimation);
             WheelZoom.BeginAnimation(ScaleTransform.ScaleYProperty, zoomOutAnimation.Clone());
+        }
+
+        /// <summary>
+        /// Sets the branding logo displayed in the center of the wheel.
+        /// </summary>
+        /// <param name="imagePath">Path to the image file.</param>
+        /// <param name="offsetX">Normalized X offset (-1 to 1).</param>
+        /// <param name="offsetY">Normalized Y offset (-1 to 1).</param>
+        /// <param name="scale">Scale factor for the image within the circle.</param>
+        public void SetBrandingLogo(string imagePath, double offsetX = 0, double offsetY = 0, double scale = 1.0)
+        {
+            try
+            {
+                var bitmap = new BitmapImage();
+                bitmap.BeginInit();
+                bitmap.UriSource = new Uri(imagePath, UriKind.Absolute);
+                bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                bitmap.EndInit();
+                bitmap.Freeze();
+
+                _logoOffsetX = offsetX;
+                _logoOffsetY = offsetY;
+                _logoScale = scale;
+
+                BrandingLogoImage.Source = bitmap;
+                BrandingLogoBorder.Visibility = Visibility.Visible;
+                UpdateBrandingLogoSize();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error loading branding logo: {ex.Message}");
+                ClearBrandingLogo();
+            }
+        }
+
+        /// <summary>
+        /// Clears the branding logo from the wheel center.
+        /// </summary>
+        public void ClearBrandingLogo()
+        {
+            BrandingLogoImage.Source = null;
+            BrandingLogoBorder.Visibility = Visibility.Collapsed;
+            _logoOffsetX = 0;
+            _logoOffsetY = 0;
+            _logoScale = 1.0;
+        }
+
+        /// <summary>
+        /// Updates the branding logo size based on the wheel size.
+        /// </summary>
+        private void UpdateBrandingLogoSize()
+        {
+            if (BrandingLogoBorder.Visibility != Visibility.Visible) return;
+            if (BrandingLogoImage.Source == null) return;
+
+            double size = Math.Min(ActualWidth, ActualHeight);
+            if (size <= 0) return;
+
+            double radius = (size / 2) - 15;
+            // Logo is now 45% of wheel radius (25% bigger than the original 36%)
+            double logoSize = radius * 0.45;
+            logoSize = Math.Max(50, Math.Min(logoSize, 150)); // Clamp between 50-150 pixels
+
+            // Update the circular container size
+            BrandingLogoClip.Width = logoSize;
+            BrandingLogoClip.Height = logoSize;
+
+            // Calculate image size based on source aspect ratio and user scale
+            var bitmap = BrandingLogoImage.Source as BitmapImage;
+            if (bitmap != null)
+            {
+                double aspectRatio = (double)bitmap.PixelWidth / bitmap.PixelHeight;
+                double imageSize = logoSize * _logoScale;
+                
+                if (aspectRatio >= 1)
+                {
+                    BrandingLogoImage.Width = imageSize;
+                    BrandingLogoImage.Height = imageSize / aspectRatio;
+                }
+                else
+                {
+                    BrandingLogoImage.Height = imageSize;
+                    BrandingLogoImage.Width = imageSize * aspectRatio;
+                }
+
+                // Apply offset (normalized offset * half the logo size for positioning within circle)
+                double maxOffset = logoSize / 2;
+                BrandingLogoImage.Margin = new Thickness(
+                    _logoOffsetX * maxOffset,
+                    _logoOffsetY * maxOffset,
+                    -_logoOffsetX * maxOffset,
+                    -_logoOffsetY * maxOffset);
+            }
+            
+            // Update the clip geometry to match the new size
+            BrandingLogoClipGeometry.Center = new Point(logoSize / 2, logoSize / 2);
+            BrandingLogoClipGeometry.RadiusX = logoSize / 2;
+            BrandingLogoClipGeometry.RadiusY = logoSize / 2;
         }
     }
 }

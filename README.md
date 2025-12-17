@@ -65,6 +65,12 @@ Personalize the winner announcement with your own sound:
 - **Options > Choose Winner Sound** — Select any .mp3, .wav, .wma, or .aac file
 - **Options > Winner Sound Enabled** — Toggle the sound on or off
 
+### Branding Logo
+Add your own logo or image to the center of the wheel — perfect for company events, branded raffles, or personalized giveaways:
+- **Options > Choose Branding Logo** — Select any image file (PNG, JPG, BMP, GIF)
+- **Interactive Preview** — Drag to position and zoom to frame your image perfectly within the circular display
+- **Options > Clear Branding Logo** — Remove the logo when you no longer need it
+
 ### Flexible Display
 - Collapse the sidebar to give the wheel maximum screen space
 - The wheel looks great on any screen size
@@ -151,7 +157,7 @@ The audit log is saved to:
 %APPDATA%\RandomWheel\audit.log
 ```
 
-Your settings (including custom sound preferences) are saved to:
+Your settings (including custom sound and branding logo preferences) are saved to:
 ```
 %APPDATA%\RandomWheel\settings.json
 ```
@@ -165,7 +171,8 @@ Your settings (including custom sound preferences) are saved to:
 - **Reset All**: If everyone's been selected, the spin button will offer to reset all items
 - **Large Lists**: The wheel handles hundreds of items, automatically adjusting text size
 - **Shuffle First**: Use Shuffle before spinning to mix up the visual order for variety
-- **Custom Sounds**: Set a fun victory sound via Options > Choose Custom Sound
+- **Custom Sounds**: Set a fun victory sound via Options > Choose Winner Sound
+- **Brand Your Wheel**: Add your company logo or event graphic to the wheel center via Options > Choose Branding Logo
 
 ---
 
